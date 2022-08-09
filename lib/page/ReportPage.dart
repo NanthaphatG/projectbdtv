@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_place/google_place.dart';
 import 'package:http/http.dart' as http;
+import 'package:projectbuddytravel/PageOther/classListPage.dart';
 import 'package:projectbuddytravel/option/Responsesive.dart';
+
 class ReportPage extends StatefulWidget {
   const ReportPage({Key? key}) : super(key: key);
 
@@ -14,27 +17,41 @@ class ReportPage extends StatefulWidget {
 }
 
 class _ReportPageState extends State<ReportPage> {
+  bool selected =false;
   int _selectedIndex = 1;
-  List <String> id=[];
-  List <String> img=[];
-  List <String> name=[];
-  List <String> type=[];
-  List <String> address=[];
+  List<String> id = [];
+  List<String> img = [];
+  List<String> name = [];
+  List<String> type = [];
+  List<String> address = [];
+  List<String> places = [];
+  String str = "Please Selected.";
+  List<String> filterChipName = [
+    'คาเฟ่',
+    'ร้านเหล้า',
+    'สวนสนุก',
+    'ฟาร์ม',
+    'ห้างสรพพสินค้า',
+    'สถานศึกษา',
+    'ร้านซ่อมรถ',
+    'ร้านอาหาร'
+  ];
+
   //var sent=TextEditingController();
 
   initState() {
     getPlaces();
+    findplace();
     super.initState();
   }
 
-  Future <String> getPlaces() async{
+  Future<String> getPlaces() async {
     Uri url = Uri.parse('http://buddytravel.cocopatch.com/GetPlace.php');
     var response = await http.get(url);
     var data1 = json.decode(response.body);
     //print(data1[1]['p_Name'].toString().length);
     try {
-      for (int i=0;i<data1.toString().length;i++)
-      {
+      for (int i = 0; i < data1.toString().length; i++) {
         setState(() {
           id.add(data1[i]['p_ID'].toString());
           img.add(data1[i]['p_Image'].toString());
@@ -42,175 +59,173 @@ class _ReportPageState extends State<ReportPage> {
           type.add(data1[i]['p_Type'].toString());
           address.add(data1[i]['p_Address'].toString());
         });
-
       }
-    }
-    catch (error){
-
-    }
+    } catch (error) {}
     print(id);
     return data1.toString();
   }
 
+  void findplace() async {
+    Uri url = Uri.parse(
+        'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province.json');
+    var response = await http.get(url);
+    var data = json.decode(response.body);
+    try {
+      for (int i = 0; i < data.toString().length; i++) {
+        setState(() {
+          places.add(data[i]['name_th'].toString());
+        });
+      }
+    } catch (error) {}
+  }
 
   @override
   Widget build(BuildContext context) {
     double w = displayWidth(context);
-    double h = displayWidth(context) - MediaQuery
-        .of(context)
-        .padding
-        .top - kToolbarHeight;
+    double h = displayWidth(context) -
+        MediaQuery.of(context).padding.top -
+        kToolbarHeight;
     return Scaffold(
-      appBar: AppBar(
-        title: Text('สถานที่'),
-        actions: [
-          IconButton(onPressed: (){}, icon: Icon(Icons.add)),
-        ],
-      ),
-      body:  Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Container(
-              width: 0.85*w,
-              height: 0.27*h,
-              child: TypeAheadField(
-                textFieldConfiguration: TextFieldConfiguration(
-                    autofocus: true,
-                    style: DefaultTextStyle.of(context).style.copyWith(
-                        fontStyle: FontStyle.italic
-                    ),
-                    decoration: InputDecoration(
-
-                        border: OutlineInputBorder()
-                    )
-                ),
-
-                suggestionsCallback: (String pattern) async {
-                  return await findplace(pattern);
+        appBar: AppBar(
+          title: Text('สถานที่'),
+          actions: [
+            IconButton(onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => ListCreatePlace()));
+            }, icon: Icon(Icons.add)),
+          ],
+        ),
+        body: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.all(15.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10.0),
+                border: Border.all(color: Colors.blueAccent),
+              ),
+              child: Autocomplete<String>(
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  if (textEditingValue.text == '') {
+                    return const Iterable<String>.empty();
+                  }
+                  return places.where((String option) {
+                    return option.contains(textEditingValue.text);
+                  });
                 },
-                itemBuilder: (BuildContext context, dynamic suggestion) {
-                  return ListTile(
-                    leading: Icon(Icons.location_on),
-                    title: Text(suggestion['name']),
-                    subtitle: Text('${suggestion['address']}'),
+                onSelected: (String selection) {
+                  debugPrint('You just selected $selection');
+                  setState(() {
+                    str = selection;
+                  });
+                },
+                fieldViewBuilder: (BuildContext context,
+                    TextEditingController fieldTextEditingController,
+                    FocusNode fieldFocusNode,
+                    VoidCallback onFieldSubmitted) {
+                  return TextField(
+                    controller: fieldTextEditingController,
+                    focusNode: fieldFocusNode,
+                    decoration: InputDecoration(
+                      suffixIcon: Icon(Icons.search),
+                    ),
+
+                    style:
+                        const TextStyle(color: Colors.blueGrey, fontSize: 18),
                   );
                 },
-                onSuggestionSelected: (suggestion) {},
               ),
             ),
-          ),
-          Expanded(child:
-          ListView.builder(
-              itemCount: name.length,
-              itemBuilder: (BuildContext buildContext, int index){
-                /*return ListTile(
-                  leading: Image.network(img[index].toString()),
-                  title: Text(name[index]+" ("+type[index]+")"),
-                  subtitle: Text(address[index]),
-                  onTap: (){},
-                );*/
-                return  Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 2.0),
-                      decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(15.0),
-                          bottomLeft: Radius.circular(15.0),
-                          topRight: Radius.circular(15.0),
-                          bottomRight: Radius.circular(15.0),
-                        ),
-                        border: Border(
-                          top: BorderSide(width: 2.0, color: Color(0xFF81D4FA)),
-                          left: BorderSide(width: 2.0, color: Color(0xFF81D4FA)),
-                          right: BorderSide(width: 2.0, color: Color(0xFF81D4FA)),
-                          bottom: BorderSide(width: 2.0, color: Color(0xFF81D4FA)),
-                        ),
-                        color: Color(0xFF81D4FA),
-                      ),
-                      height: 0.9*h,
-                      child: Expanded(
-                        child: Column(
-                          children: [
-                            Padding(padding: EdgeInsets.fromLTRB(0, 5, 0, 5)),
-                            ClipRRect(
-                              child:  Image.network(img[index].toString(),
-                                height: 0.5*h,
-                                width: 0.85*w,
-                                fit:BoxFit.cover,
+            Padding(
+                padding: EdgeInsets.all(5),
+              child: Container(
+                alignment: Alignment.topLeft,
+                child: Text('ประเภทสถานที่',
+                  style: TextStyle(fontSize: 20),),
+              ),
+            ),
+            Container(
+              height: h * 0.6,
+              child: Wrap(
+                spacing: 5.0,
+                runSpacing: 5.0,
+                children: [
+                  for (int i = 0; i < filterChipName.length; i++)
+                    buildFilterChip(filterChipName[i]),
+                ],
+              ),
+            ),
+            Expanded(
+                child: ListView.builder(
+                    itemCount: name.length,
+                    itemBuilder: (BuildContext buildContext, int index) {
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Card(
+                          color: Colors.lightBlueAccent.shade100,
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            children: [
+                              Image.network(
+                                img[index],
+                                fit: BoxFit.cover,
                               ),
-                              borderRadius: BorderRadius.circular(15.0),
-                            ),
-                            Row(
-                              children: [
-                                new Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(5.0),
-                                      child: new Text(
-                                        name[index],
-                                        style: TextStyle(fontSize: 17,fontWeight: FontWeight. bold,color: Colors.teal[800]),
+                              ListTile(
+                                title: Text(name[index]),
+                                subtitle: Text(
+                                  'Secondary Text',
+                                  style: TextStyle(
+                                      color: Colors.black.withOpacity(0.6)),
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                                child: Text(
+                                  address[index],
+                                  style: TextStyle(
+                                      color: Colors.black.withOpacity(0.6)),
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  ButtonBar(
+                                    alignment: MainAxisAlignment.start,
+                                    children: [
+                                      FlatButton(
+                                        textColor: const Color(0xFF6200EE),
+                                        onPressed: () {},
+                                        child: const Text('เยี่ยมชม'),
                                       ),
-                                    ),
-                                    Container(
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children:[
-                                          Icon(Icons.star,color: Colors.yellow,size: 0.045*w),
-                                          Icon(Icons.star,color: Colors.yellow,size: 0.045*w),
-                                          Icon(Icons.star,color: Colors.yellow,size: 0.045*w),
-                                        ],
+                                    ],
+                                  ),
+                                  ButtonBar(
+                                    alignment: MainAxisAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        onPressed: () {},
+                                        icon: Icon(Icons.bookmark_border),
+                                        color: const Color(0xFF6200EE),
                                       ),
-                                    ),
-
-                                  ],
-                                )
-                              ],
-                            ),
-                          ],
+                                    ],
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
                         ),
-                      )
-                  ),
-                );
-              }
-          )
-          ),
-        ],
-      )
-    );
+                      );
+                    })),
+          ],
+        ));
   }
-  Future<List<dynamic>> findplace(String pattern) async {
-    List<dynamic> places = [];
-    var googlePlace = GooglePlace('AIzaSyDPgyrn1yvDTIm9yETOpj_TyxH1jQVhryg');
-    TextSearchResponse? suggestion = await googlePlace.search.getTextSearch(
-      pattern,
-      language: 'th',
+
+  buildFilterChip(String ftName) {
+    return FilterChip(
+      label: Text(ftName),
+      selected: selected,
+      onSelected: (bool value) {
+        selected = value;
+        setState(() {});
+      },
     );
-    if (suggestion != null && suggestion.results != null) {
-      for (var item in suggestion.results!) {
-        var place;
-        if (item.geometry!.location != null) {
-          place = {
-            'name': item.name,
-            'lat': item.geometry!.location!.lat,
-            'lng': item.geometry!.location!.lng,
-            'address': item.formattedAddress
-          };
-          //name1=jsonEncode(place['name']);
-          log(jsonEncode(place));
-          places.add(place);
-        }
-        else{
-          place={};
-          places.add(place);
-        }
-      }
-    }
-    if (places.length > 5) return places.sublist(0, 4);
-    return places;
   }
 }

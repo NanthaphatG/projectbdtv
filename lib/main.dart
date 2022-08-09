@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projectbuddytravel/page/Login.dart';
+import 'package:splashscreen/splashscreen.dart';
 
 void main() {
   runApp(MyApp());
@@ -23,7 +24,22 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: Login(),
+      home: Splash2(),
+    );
+  }
+}
+class Splash2 extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SplashScreen(
+      backgroundColor: Colors.pinkAccent,
+      seconds: 4,
+      navigateAfterSeconds: new Login(),
+      title: new Text('Buddy Travel',textScaleFactor: 2,),
+      image: new Image.asset('img/Buddy.png'),
+      loadingText: Text("Loading"),
+      photoSize: 100.0,
+      loaderColor: Colors.blue,
     );
   }
 }

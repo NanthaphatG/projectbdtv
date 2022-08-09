@@ -3,6 +3,8 @@
    <application
         android:label="projectbuddytravel"
         android:icon="@mipmap/ic_launcher">
+       <meta-data android:name="com.google.android.geo.API_KEY"
+           android:value="AIzaSyC6USqS7InyHldOFJgZb9LRjHf0w_mrZPo"/>
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
